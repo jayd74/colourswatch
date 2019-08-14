@@ -27,66 +27,44 @@ figma.ui.onmessage = msg => {
       }
 
       var num = parseInt(color, 16);
-      var r = (num >> 16) + brightness;
+      var r = ((num >> 16) + brightness)/255;
 
-      if (r > 255) r = 255;
+      if (r > 1) r = 1;
       else if (r < 0) r = 0;
 
-      var b = ((num >> 8) & 0x00FF) + brightness;
+      var b = (((num >> 8) & 0x00FF) + brightness)/255;
 
-      if (b > 255) b = 255;
+      if (b > 1) b = 1;
       else if (b < 0) b = 0;
 
-      var g = (num & 0x0000FF) + brightness;
+      var g = ((num & 0x0000FF) + brightness)/255;
 
-      if (g > 255) g = 255;
+      if (g > 1) g = 1;
       else if (g < 0) g = 0;
 
-      return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
+      const rgb = {r, g, b}
+
+      return rgb
     }
 
-    function convertHex(hexColor, opacity) {
-      hexColor = hexColor.replace('#', '');
-
-      const r = parseInt(hexColor.substring(0, 2), 16)/255;
-      const g = parseInt(hexColor.substring(2, 4), 16)/255;
-      const b = parseInt(hexColor.substring(4, 6), 16)/255;
-
-      const result = {r, g, b};
-
-      return result;
-    }
-
-    function precise_round(num, dec) {
-
-      if ((typeof num !== 'number') || (typeof dec !== 'number'))
-        return false;
-
-      var num_sign = num >= 0 ? 1 : -1;
-
-      return (Math.round((num * Math.pow(10, dec)) + (num_sign * 0.0001)) / Math.pow(10, dec)).toFixed(dec);
-    }
-
-    const originalRGBAColor = convertHex(hexColor, 1)
-
+    const originalColor = LightenDarkenColor(hexColor, 0)
     const darkenColor = LightenDarkenColor(hexColor, 20)
-    const darkenRGBAColor = convertHex(darkenColor, 1)
-
     const lightenColor = LightenDarkenColor(hexColor, -20)
-    const lightenRGBAColor = convertHex(lightenColor, 1)
 
+    console.log({originalColor, darkenColor, lightenColor})
     //Creates the rectangle
 
       const rectDark = figma.createRectangle();
       const rectLight = figma.createRectangle();
       const rectOriginal = figma.createRectangle();
+
       rectLight.x = 150
       rectOriginal.x = 350
       rectDark.x = 550
 
-      rectDark.fills = [{ type: 'SOLID', color: { r: darkenRGBAColor['r'], g: darkenRGBAColor['g'], b: darkenRGBAColor['b'] }}];
-      rectOriginal.fills = [{ type: 'SOLID', color: { r: originalRGBAColor['r'], g: originalRGBAColor['g'], b: originalRGBAColor['b'] } }];
-      rectLight.fills = [{ type: 'SOLID', color: { r: lightenRGBAColor['r'], g: lightenRGBAColor['g'], b: lightenRGBAColor['b'] } }];
+      rectDark.fills = [{ type: 'SOLID', color: { r: darkenColor['r'], g: darkenColor['g'], b: darkenColor['b'] }}];
+      rectOriginal.fills = [{ type: 'SOLID', color: { r: originalColor['r'], g: originalColor['g'], b: originalColor['b'] } }];
+      rectLight.fills = [{ type: 'SOLID', color: { r: lightenColor['r'], g: lightenColor['g'], b: lightenColor['b'] } }];
 
       figma.currentPage.appendChild(rectDark);
       figma.currentPage.appendChild(rectOriginal);

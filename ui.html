@@ -1,0 +1,17 @@
+<h2>Colour Picker</h2>
+<p>Colour: <input id="color" type="color"></p>
+<button id="pick">Pick</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('pick').onclick = () => {
+  const color = document.getElementById('color');
+  const hexColor = color.value;
+  parent.postMessage({ pluginMessage: { type: 'darken-color', hexColor } }, '*')
+}
+
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+}
+
+</script>

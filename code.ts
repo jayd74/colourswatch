@@ -16,41 +16,45 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
   if (msg.type === 'darken-color') {
     const nodes: SceneNode[] = [];
-    const hex = msg.hexColor
+    const hexColor = msg.hexColor
 
-    function LightenDarkenColor(hexColor, brightness) {
-
+    function LightenDarkenColor(color, brightness) {
       var usePound = false;
 
-      if (hexColor[0] == "#") {
-        hexColor = hexColor.slice(1);
+      if (color[0] == "#") {
+        color = color.slice(1);
         usePound = true;
       }
 
-      var num = parseInt(hexColor, 16);
+      var num = parseInt(color, 16);
+      var r = (num >> 16) + brightness;
 
-      var r = ((num >> 16) + brightness)/255;
-      var rVal = precise_round(r, 1)
+      if (r > 255) r = 255;
+      else if (r < 0) r = 0;
 
-      // if (r > 255) r = 255;
-      // else if (r < 0) r = 0;
+      var b = ((num >> 8) & 0x00FF) + brightness;
 
-      var b = ((((num >> 8) & 0x00FF) + brightness)/255);
-      var bVal = precise_round(b, 1)
+      if (b > 255) b = 255;
+      else if (b < 0) b = 0;
 
-      // if (b > 255) b = 255;
-      // else if (b < 0) b = 0;
+      var g = (num & 0x0000FF) + brightness;
 
-      var g = ((num & 0x0000FF) + brightness)/255;
-      var gVal = precise_round(g, 1)
+      if (g > 255) g = 255;
+      else if (g < 0) g = 0;
 
-      // if (g > 255) g = 255;
-      // else if (g < 0) g = 0;
+      return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
+    }
 
-      const rgb = {r, g, b}
+    function convertHex(hexColor, opacity) {
+      hexColor = hexColor.replace('#', '');
 
-      return rgb;
+      const r = parseInt(hexColor.substring(0, 2), 16)/255;
+      const g = parseInt(hexColor.substring(2, 4), 16)/255;
+      const b = parseInt(hexColor.substring(4, 6), 16)/255;
 
+      const result = {r, g, b};
+
+      return result;
     }
 
     function precise_round(num, dec) {
@@ -63,15 +67,34 @@ figma.ui.onmessage = msg => {
       return (Math.round((num * Math.pow(10, dec)) + (num_sign * 0.0001)) / Math.pow(10, dec)).toFixed(dec);
     }
 
-    const newColor = LightenDarkenColor(hex, 20)
-    console.log(newColor)
+    const originalRGBAColor = convertHex(hexColor, 1)
+
+    const darkenColor = LightenDarkenColor(hexColor, 20)
+    const darkenRGBAColor = convertHex(darkenColor, 1)
+
+    const lightenColor = LightenDarkenColor(hexColor, -20)
+    const lightenRGBAColor = convertHex(lightenColor, 1)
+
     //Creates the rectangle
-    const rect = figma.createRectangle();
-    rect.fills = [{ type: 'SOLID', color: { r: newColor['r'], g: newColor['g'], b: newColor['b'] }}];
-    figma.currentPage.appendChild(rect);
-    nodes.push(rect);
-    figma.currentPage.selection = nodes;
-    figma.viewport.scrollAndZoomIntoView(nodes);
+
+      const rectDark = figma.createRectangle();
+      const rectLight = figma.createRectangle();
+      const rectOriginal = figma.createRectangle();
+      rectLight.x = 150
+      rectOriginal.x = 350
+      rectDark.x = 550
+
+      rectDark.fills = [{ type: 'SOLID', color: { r: darkenRGBAColor['r'], g: darkenRGBAColor['g'], b: darkenRGBAColor['b'] }}];
+      rectOriginal.fills = [{ type: 'SOLID', color: { r: originalRGBAColor['r'], g: originalRGBAColor['g'], b: originalRGBAColor['b'] } }];
+      rectLight.fills = [{ type: 'SOLID', color: { r: lightenRGBAColor['r'], g: lightenRGBAColor['g'], b: lightenRGBAColor['b'] } }];
+
+      figma.currentPage.appendChild(rectDark);
+      figma.currentPage.appendChild(rectOriginal);
+      figma.currentPage.appendChild(rectLight);
+
+      nodes.push(rectDark, rectLight, rectDark);
+      figma.currentPage.selection = nodes;
+      figma.viewport.scrollAndZoomIntoView(nodes);
   }
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.
